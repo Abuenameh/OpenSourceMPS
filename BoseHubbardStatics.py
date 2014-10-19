@@ -1,5 +1,6 @@
 import time
 
+import sys
 import MPSPyLib as mps
 import numpy as np
 import matplotlib.pyplot as plt
@@ -22,7 +23,7 @@ def plotIt(jvalues, muvalues, dependentvalues):
     plt.show()
 
 
-PostProcess = True
+PostProcess = int(sys.argv[1])#False if sys.argv[1] == 0 else True
 
 # Build operators
 Operators = mps.BuildBoseOperators(6)
@@ -43,10 +44,10 @@ myObservables.AddObservable(Operators, ['bdagger', 'b'], 'corr', 'spdm')
 myConv = mps.MPSConvergenceParameters(max_num_sweeps=7)
 
 U = 1.0
-tlist = [0.01]  #np.linspace(0,0.4,20)
+tlist = np.linspace(0,0.4,20)
 parameters = []
 L = 6
-Nlist = np.linspace(1, 13, 12)
+Nlist = np.linspace(1, 12, 12)
 
 for N in Nlist:
     for t in tlist:
@@ -64,7 +65,7 @@ for N in Nlist:
             'Abelian_generators': ['nbtotal'],  #Working At Unit Filling
             'Abelian_quantum_numbers': [N],
             #Convergence parameters
-            'verbose': 1,
+            'verbose': 0,
             'MPSObservables': myObservables,
             'MPSConvergenceParameters': myConv
         })
