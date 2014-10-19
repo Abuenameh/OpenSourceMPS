@@ -54,8 +54,8 @@ for N in Nlist:
             #Directories
             'job_ID': 'Bose_Hubbard',
             'unique_ID': 't_' + str(t) + 'N_' + str(N),
-            'Write_Directory': 'TMP/',
-            'Output_Directory': 'OUTPUTS/',
+            'Write_Directory': 'Temp/',
+            'Output_Directory': 'Output/',
             #System size and Hamiltonian parameters
             'L': L,
             't': t,
