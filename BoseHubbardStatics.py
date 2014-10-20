@@ -44,23 +44,28 @@ myObservables.AddObservable(Operators, ['bdagger', 'b'], 'corr', 'spdm')
 myConv = mps.MPSConvergenceParameters(max_num_sweeps=7)
 
 U = 1.0
-tlist = np.linspace(0,0.4,20)
+tlist = [[t+0.01,t-0.02,t-0.03,t+0.04,t+0.03,t-0.01] for t in np.linspace(0,0.4,20)]
+# tlist = [[t, t, t, t, t, t] for t in np.linspace(0,0.4,20)]
+# tlist = [t for t in np.linspace(0,0.4,20)]
 parameters = []
 L = 6
 Nlist = np.linspace(1, 12, 12)
+
+# count = 0
 
 for N in Nlist:
     for t in tlist:
         parameters.append({
             #Directories
             'job_ID': 'Bose_Hubbard',
-            'unique_ID': 't_' + str(t) + 'N_' + str(N),
+            'unique_ID': 't_' + str(t[0]) + 'N_' + str(N),
+            # 'unique_ID': 't_' + str(t) + 'N_' + str(N),
             'Write_Directory': 'Temp/',
             'Output_Directory': 'Output/',
             #System size and Hamiltonian parameters
             'L': L,
-            't': t,
-            'U': U,
+            't': t,#[0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01],#t,
+            'U': U,#[1,1,1,1,1,1],#U,
             #Specification of symmetries and good quantum numbers
             'Abelian_generators': ['nbtotal'],  #Working At Unit Filling
             'Abelian_quantum_numbers': [N],
@@ -69,13 +74,14 @@ for N in Nlist:
             'MPSObservables': myObservables,
             'MPSConvergenceParameters': myConv
         })
+        # count += 1
 
 
-#Write Fortran-readable main files
-MainFiles = mps.WriteFiles(parameters, Operators, H, PostProcess=PostProcess)
+#Write Fortran-readable main files=b
+MainFiles=mps.WriteFiles(parameters,Operators,H,PostProcess=PostProcess)
 #Run the simulations if we are not just Post
 if not PostProcess:
-    mps.runMPS(MainFiles, RunDir='./')
+    mps.runMPS(MainFiles,RunDir='./')
 
 print time.time() - t0
 
@@ -87,8 +93,10 @@ if PostProcess:
         mulist = []
         energylist = []
         depletionlist = []
-        Outputs2 = mps.GetObservables(Outputs, 't', t)
-        tinternal = t * np.ones(len(Nlist))
+        Outputs2 = mps.GetObservables(Outputs, 't', [t])
+        # Outputs2 = mps.GetObservables(Outputs, 't', t[0])
+        # tinternal = t * np.ones(len(Nlist))
+        tinternal = t[0] * np.ones(len(Nlist))
 
         for Output in Outputs2:
             spdm = Output['spdm']
