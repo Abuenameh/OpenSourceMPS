@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 from mathematica import mathformat
 from matplotlib import cm
 from speed import gprogress
+from speed import progress
 
 numthreads = 2
 
@@ -32,9 +33,9 @@ def run(MainFiles):
     count = 0;
     with concurrent.futures.ThreadPoolExecutor(max_workers=numthreads) as executor:
         futures = [executor.submit(runmps, infile) for infile in MainFiles]
-        for future in gprogress(concurrent.futures.as_completed(futures), size=len(futures)):
-            print count
-            count += 1
+        for future in progress(concurrent.futures.as_completed(futures), size=len(futures)):
+            # print count
+            # count += 1
             pass
     gtk.main_quit()
 
@@ -98,13 +99,13 @@ myObservables = mps.Observables()
 myObservables.AddObservable(Operators, 'nbtotal', 'site', 'n')
 myObservables.AddObservable(Operators, 'n2', 'site', 'n2')
 #correlation functions
-# myObservables.AddObservable(Operators,['nbtotal','nbtotal'],'corr','nn')
+myObservables.AddObservable(Operators,['nbtotal','nbtotal'],'corr','nn')
 myObservables.AddObservable(Operators, ['bdagger', 'b'], 'corr', 'spdm')
 
 maxsweeps = 7
 myConv = mps.MPSConvergenceParameters(max_num_sweeps=maxsweeps)
 
-L = 6
+L = 50
 Wlist = [2e10]#[2e10, 2e11]
 Nlist = [2]#[1, 2, 3]
 Nlist = range(1, 2*L+1)
@@ -201,6 +202,7 @@ if True:#PostProcess:
     nres = np.zeros(ndims)
     n2res = np.zeros(ndims)
     cres = np.zeros(cdims)
+    nnres = np.zeros(cdims)
 
     mumres = np.zeros(dims)
     mupres = np.zeros(dims)
@@ -213,6 +215,7 @@ if True:#PostProcess:
     nres.fill(np.NaN)
     n2res.fill(np.NaN)
     cres.fill(np.NaN)
+    nnres.fill(np.NaN)
 
     mumres.fill(np.NaN)
     mupres.fill(np.NaN)
@@ -265,6 +268,7 @@ if True:#PostProcess:
                 nres[iW][iN] = Output['n']#n
                 n2res[iW][iN] = Output['n2']#n2
                 cres[iW][iN] = Output['spdm']#spdm
+                nnres[iW][iN] = Output['nn']
 
     for iW in range(0, len(Wlist)):
         E0s = E0res[iW]
@@ -281,6 +285,9 @@ if True:#PostProcess:
     res += 'nres[{0}]={1};\n'.format(resi, mathformat(nres))
     res += 'n2res[{0}]={1};\n'.format(resi, mathformat(n2res))
     res += 'cres[{0}]={1};\n'.format(resi, mathformat(cres))
+    res += 'nnres[{0}]={1};\n'.format(resi, mathformat(nnres))
+    res += 'mumres[{0}]={1};\n'.format(resi, mathformat(mumres))
+    res += 'mupres[{0}]={1};\n'.format(resi, mathformat(mupres))
     res += 'runtime[{0}]=\"{1}\";\n'.format(resi, runtime)
 
     resf.write(res)
