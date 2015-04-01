@@ -75,7 +75,7 @@ def JWi(W):
 def UWi(W):
     return -g24 ** 2 / Delta * (Ng ** 2 * W ** 2) / ((Ng ** 2 + W ** 2) ** 2)
 
-PostProcessOnly = int(sys.argv[1])
+PostProcessOnly = 0#int(sys.argv[1])
 
 # if not PostProcessOnly:
 #     import gtk
@@ -205,7 +205,7 @@ def pent(t):
 
 Quenches=mps.QuenchList()
 # Quenches.AddQuench(H, ['e'], 1e-8, 1e-9, [qwet], ConvergenceParameters=myKrylovConv)
-Quenches.AddQuench(H, ['W', 'g24', 'e', 'De', 'a', 'g', 'd', 'pen'], 1e-7, 1e-9, [Wt, g24t, et, Det, at, gt, dt, pent], ConvergenceParameters=myKrylovConv)
+Quenches.AddQuench(H, ['W', 'g24', 'e', 'De', 'a', 'g', 'd', 'pen'], 1e-6, 1e-9, [Wt, g24t, et, Det, at, gt, dt, pent], ConvergenceParameters=myKrylovConv)
 # Quenches.AddQuench(H, ['J', 'U'], 1e-7, 1e-9, [Ji, Ui], ConvergenceParameters=myKrylovConv)
 # Quenches.AddQuench(H, ['J'], 1, 1e-3, [Jfunc], ConvergenceParameters=myKrylovConv)
 
@@ -278,7 +278,7 @@ parameters.append({
 })
 
 MainFiles=mps.WriteFiles(parameters,Operators,H,PostProcess=PostProcessOnly)
-mps.runMPS(MainFiles)
+mps.runMPS(MainFiles, RunDir='./')
 
 Outputs = mps.ReadDynamicObservables(parameters)
 Outputs2 = mps.ReadStaticObservables(parameters)
@@ -371,7 +371,7 @@ for p in Outputs[0]:
 # print nS13
 # print nS14
 
-resi = 16
+resi = int(sys.argv[1])
 f = open('res.{0}.txt'.format(resi), 'w')
 f.write('t[{0}]={1};\n'.format(resi, mathformat(t)))
 # f.write('n[{0}]={1};\n'.format(resi, mathformat(n)))
@@ -422,7 +422,7 @@ pylab.figure()
 pylab.plot(t, npi, t, np2i)
 pylab.figure()
 pylab.plot(t, Fp)
-pylab.show()
+# pylab.show()
 
 quit()
 
