@@ -10,10 +10,11 @@ import datetime
 # import gtk
 # import gobject
 import matplotlib.pyplot as plt
-from mathematica import mathformat
+from mathematicaosmps import mathformat
 from matplotlib import cm
 from speed import gprogress
 from speed import progress
+import pylab
 
 numthreads = 6
 
@@ -61,17 +62,24 @@ def JW(W):
 def UW(W):
     return -2*(g24 * g24) / Delta * (Ng * Ng * W * W) / ((Ng * Ng + W * W) * (Ng * Ng + W * W))
 
+def JWi(W):
+    return alpha * W ** 2 / (Ng ** 2 + W ** 2)
+
+def UWi(W):
+    return -g24 ** 2 / Delta * (Ng ** 2 * W ** 2) / ((Ng ** 2 + W ** 2) ** 2)
+
 PostProcessOnly = int(sys.argv[1])
 
-if not PostProcessOnly:
-    import gtk
-    import gobject
+# if not PostProcessOnly:
+#     import gtk
+#     import gobject
 
 # Build operators
-nmax = 6
+nmax = 3
 Operators = mps.BuildBoseOperators(nmax)
 Operators['n2'] = np.dot(Operators['nbtotal'], Operators['nbtotal'])
 Operators['interaction'] = 0.5 * (np.dot(Operators['nbtotal'], Operators['nbtotal']) - Operators['nbtotal'])
+# Operators['F'] = Operators['n2'] - np.dot(Operators['nbtotal'], Operators['nbtotal'])
 #Define Hamiltonian MPO
 H = mps.MPO()
 H.AddMPOTerm(Operators, 'bond', ['bdagger', 'b'], hparam='J', weight=-1.0)
@@ -83,11 +91,104 @@ myObservables = mps.Observables()
 myObservables.AddObservable(Operators, 'nbtotal', 'site', 'n')
 myObservables.AddObservable(Operators, 'n2', 'site', 'n2')
 #correlation functions
-myObservables.AddObservable(Operators,['nbtotal','nbtotal'],'corr','nn')
-myObservables.AddObservable(Operators, ['bdagger', 'b'], 'corr', 'spdm')
+# myObservables.AddObservable(Operators,['nbtotal','nbtotal'],'corr','nn')
+# myObservables.AddObservable(Operators, ['bdagger', 'b'], 'corr', 'spdm')
+
+dynObservables = mps.Observables()
+dynObservables.AddObservable(Operators, 'nbtotal', 'site', 'n')
+dynObservables.AddObservable(Operators, 'n2', 'site', 'n2')
 
 maxsweeps = 7
 myConv = mps.MPSConvergenceParameters(max_num_sweeps=maxsweeps)
+myConv.AddModifiedConvergenceParameters(0,['max_bond_dimension','local_tol'],[50,1E-14])
+myKrylovConv=mps.KrylovConvergenceParameters(MaxnLanczosIterations=20,lanczos_tol=1E-8)
+
+Wi = 7.9e10
+Wf = 1.1e12
+
+def func(x):
+    if x < 0:
+        return 0
+    elif x < 0.5:
+        return 2 * x ** 2
+    elif x < 1:
+        return -2*(x-1) ** 2 + 1
+    else:
+        return 1
+
+def Wt(t):
+    return (Wi - Wf) * func(2*(1 - 1e6*t) - 0.4) + Wf
+
+def Ji(t):
+    # print "\nJi({0})\n\n".format(t)
+    # return JWi(Wi)
+    return JWi(Wt(t))
+    # return 2e7
+
+def Ui(t):
+    # print "\nUi({0})\n\n".format(t)
+    # return UWi(Wi)
+    return UWi(Wt(t))
+    # return 1.6e7
+
+Quenches=mps.QuenchList()
+# Quenches.AddQuench(H, ['U'], 1e-7, 1e-9, [Ui], ConvergenceParameters=myKrylovConv)
+# Quenches.AddQuench(H, ['J'], 1e-7, 1e-9, [Ji], ConvergenceParameters=myKrylovConv)
+Quenches.AddQuench(H, ['J', 'U'], 1e-6, 1e-9, [Ji, Ui], ConvergenceParameters=myKrylovConv)
+# Quenches.AddQuench(H, ['J'], 1, 1e-3, [Jfunc], ConvergenceParameters=myKrylovConv)
+
+L = 4
+
+parameters = []
+parameters.append({
+    'job_ID': 'BH_',
+    'unique_ID': '0',
+    'Write_Directory': 'Temp/',
+    'Output_Directory': 'Output/',
+    'L': L,
+    'J': 0, #JWi(Wi),
+    'U': UWi(Wi),
+    'Abelian_generators': ['nbtotal'],
+    'Abelian_quantum_numbers': [L],
+    'verbose': 0,
+    'MPSObservables': myObservables,
+    'MPSConvergenceParameters': myConv,
+    'Quenches': Quenches,
+    'DynamicsObservables': dynObservables
+})
+
+MainFiles=mps.WriteFiles(parameters,Operators,H,PostProcess=PostProcessOnly)
+# input()
+mps.runMPS(MainFiles)
+
+Outputs = mps.ReadDynamicObservables(parameters)
+# Outputs = mps.ReadStaticObservables(parameters)
+
+# print Outputs
+
+# print Outputs[0][0]['time']
+# print Outputs[0][0]['n']
+# print Outputs[0][0]['n2']
+# print Outputs[0][-1]['time']
+# print Outputs[0][-1]['n']
+# print Outputs[0][-1]['n2']
+
+
+t = []
+F = []
+for p in Outputs[0]:
+    t.append(p['time'])
+    # F.append(p['n2'][1] - p['n'][1] ** 2)
+    # F.append(p['n'][1])
+    F.append(p['n2'][1] - p['n'][1] ** 2)
+
+print t
+print F
+
+pylab.plot(t, F)
+pylab.show()
+
+quit()
 
 L = 50
 Wlist = [2e10]#[2e10, 2e11]

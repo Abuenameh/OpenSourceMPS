@@ -16,6 +16,8 @@ from speed import gprogress
 from speed import progress
 import pylab
 
+start = time.time()
+
 numthreads = 6
 
 def execute(command):
@@ -50,6 +52,9 @@ eps = 0
 delta = 1e12
 
 Ng = np.sqrt(N) * g13;
+
+Wi = 7.9e10
+Wf = 1.1e12
 
 def JW(W):
     lenW = len(W)
@@ -93,11 +98,20 @@ Operators['ad'] = Operators['bdagger_0']
 Operators['S12d'] = Operators['bdagger_1']
 Operators['S13d'] = Operators['bdagger_2']
 Operators['S14d'] = Operators['bdagger_3']
+B = np.sqrt(Ng**2 + Wi**2)
+A = np.sqrt(4*B**2 + delta**2)
+Operators['p'] = (1 / B) * (Ng * Operators['S12'] - Wi * Operators['a'])
+Operators['pd'] = (1 / B) * (Ng * Operators['S12d'] - Wi * Operators['ad'])
+Operators['pp'] = np.sqrt(2/(A*(A+delta)))*(Wi*Operators['S12']+Ng*Operators['a']+((A+delta)/2)*Operators['S13'])
+Operators['ppd'] = np.sqrt(2/(A*(A+delta)))*(Wi*Operators['S12d']+Ng*Operators['ad']+((A+delta)/2)*Operators['S13d'])
+Operators['pm'] = np.sqrt(2/(A*(A-delta)))*(Wi*Operators['S12']+Ng*Operators['a']-((A-delta)/2)*Operators['S13'])
+Operators['pmd'] = np.sqrt(2/(A*(A-delta)))*(Wi*Operators['S12d']+Ng*Operators['ad']-((A-delta)/2)*Operators['S13d'])
 Operators['HW'] = np.dot(Operators['S12d'], Operators['S13']) + np.dot(Operators['S13d'], Operators['S12'])
 Operators['Hg13'] = np.dot(Operators['S13'], Operators['ad']) + np.dot(Operators['a'], Operators['S13d'])
 # Operators['Hg24'] = np.dot(Operators['S14'], Operators['ad']) + np.dot(Operators['a'], Operators['S14d'])
 # Operators['Hg24'] = np.dot(Operators['S12d'], np.dot(np.dot(Operators['S14'], Operators['S14']), Operators['ad'])) + np.dot(Operators['a'], np.dot(np.dot(Operators['S14d'], Operators['S14d']), Operators['S12']))
 Operators['Hg24'] = np.dot(Operators['S12d'], np.dot(Operators['S14'], Operators['ad'])) + np.dot(Operators['a'], np.dot(Operators['S14d'], Operators['S12']))
+Operators['penalty'] = np.dot(Operators['pmd'], Operators['pm'])
 Operators['ntotal'] = Operators['na'] + Operators['nS12'] + Operators['nS13'] + 2 * Operators['nS14']
 # Operators['F'] = Operators['n2'] - np.dot(Operators['nbtotal'], Operators['nbtotal'])
 #Define Hamiltonian MPO
@@ -111,6 +125,7 @@ H.AddMPOTerm(Operators, 'site', 'HW', hparam='W', weight=1.0)
 H.AddMPOTerm(Operators, 'site', 'Hg13', hparam='g', weight=1.0)
 H.AddMPOTerm(Operators, 'site', 'Hg24', hparam='g24', weight=1.0)
 H.AddMPOTerm(Operators, 'bond', ['ad', 'a'], hparam='a', weight=1.0)
+H.AddMPOTerm(Operators, 'site', 'penalty', hparam='pen', weight=1.0)
 
 Operators['p1'] = np.dot(Operators['S12d'], Operators['a']) + np.dot(Operators['ad'], Operators['S12'])
 
@@ -139,8 +154,8 @@ myConv.AddModifiedConvergenceParameters(0,['max_bond_dimension','local_tol'],[50
 # myKrylovConv=mps.KrylovConvergenceParameters(MaxnLanczosIterations=40,lanczos_tol=1E-8)
 myKrylovConv=mps.KrylovConvergenceParameters()
 
-Wi = 7.9e10
-Wf = 1.1e12
+# Wi = 7.9e10
+# Wf = 1.1e12
 
 def func(x):
     if x < 0:
@@ -185,22 +200,35 @@ def at(t):
 def gt(t):
     return Ng
 
+def pent(t):
+    return 0
+
 Quenches=mps.QuenchList()
 # Quenches.AddQuench(H, ['e'], 1e-8, 1e-9, [qwet], ConvergenceParameters=myKrylovConv)
-Quenches.AddQuench(H, ['W', 'g24', 'e', 'De', 'a', 'g', 'd'], 1e-8, 1e-10, [Wt, g24t, et, Det, at, gt, dt], ConvergenceParameters=myKrylovConv)
+Quenches.AddQuench(H, ['W', 'g24', 'e', 'De', 'a', 'g', 'd', 'pen'], 1e-7, 1e-9, [Wt, g24t, et, Det, at, gt, dt, pent], ConvergenceParameters=myKrylovConv)
 # Quenches.AddQuench(H, ['J', 'U'], 1e-7, 1e-9, [Ji, Ui], ConvergenceParameters=myKrylovConv)
 # Quenches.AddQuench(H, ['J'], 1, 1e-3, [Jfunc], ConvergenceParameters=myKrylovConv)
 
-B = np.sqrt(Ng**2 + Wi**2)
-Operators['p'] = (1 / B) * (Ng * Operators['S12'] - Wi * Operators['a'])
-Operators['pd'] = (1 / B) * (Ng * Operators['S12d'] - Wi * Operators['ad'])
+# B = np.sqrt(Ng**2 + Wi**2)
+# A = np.sqrt(4*B**2 + delta**2)
+# Operators['p'] = (1 / B) * (Ng * Operators['S12'] - Wi * Operators['a'])
+# Operators['pd'] = (1 / B) * (Ng * Operators['S12d'] - Wi * Operators['ad'])
+# Operators['pp'] = np.sqrt(2/(A*(A+delta)))*(Wi*Operators['S12']+Ng*Operators['a']+((A+delta)/2)*Operators['S13'])
+# Operators['ppd'] = np.sqrt(2/(A*(A+delta)))*(Wi*Operators['S12d']+Ng*Operators['ad']+((A+delta)/2)*Operators['S13d'])
+# Operators['pm'] = np.sqrt(2/(A*(A-delta)))*(Wi*Operators['S12']+Ng*Operators['a']-((A-delta)/2)*Operators['S13'])
+# Operators['pmd'] = np.sqrt(2/(A*(A-delta)))*(Wi*Operators['S12d']+Ng*Operators['ad']-((A-delta)/2)*Operators['S13d'])
 Operators['np'] = np.dot(Operators['pd'], Operators['p'])
 Operators['np2'] = np.dot(Operators['np'], Operators['np'])
+Operators['npp'] = np.dot(Operators['ppd'], Operators['pp'])
+Operators['npm'] = np.dot(Operators['pmd'], Operators['pm'])
 Operators['na2'] = np.dot(Operators['na'], Operators['na'])
 Operators['nS122'] = np.dot(Operators['nS12'], Operators['nS12'])
 Operators['nS132'] = np.dot(Operators['nS13'], Operators['nS13'])
 Operators['nS142'] = np.dot(Operators['nS14'], Operators['nS14'])
 myObservables.AddObservable(Operators, 'np', 'site', 'np')
+myObservables.AddObservable(Operators, 'npp', 'site', 'npp')
+myObservables.AddObservable(Operators, 'npm', 'site', 'npm')
+myObservables.AddObservable(Operators, 'np2', 'site', 'np2')
 myObservables.AddObservable(Operators, 'na', 'site', 'na')
 myObservables.AddObservable(Operators, 'nS12', 'site', 'nS12')
 myObservables.AddObservable(Operators, 'nS13', 'site', 'nS13')
@@ -209,8 +237,8 @@ myObservables.AddObservable(Operators, 'na2', 'site', 'na2')
 myObservables.AddObservable(Operators, 'nS122', 'site', 'nS122')
 myObservables.AddObservable(Operators, 'nS132', 'site', 'nS132')
 myObservables.AddObservable(Operators, 'nS142', 'site', 'nS142')
-# dynObservables.AddObservable(Operators, 'np', 'site', 'np')
-# dynObservables.AddObservable(Operators, 'np2', 'site', 'np2')
+dynObservables.AddObservable(Operators, 'np', 'site', 'np')
+dynObservables.AddObservable(Operators, 'np2', 'site', 'np2')
 dynObservables.AddObservable(Operators, 'na', 'site', 'na')
 dynObservables.AddObservable(Operators, 'nS12', 'site', 'nS12')
 dynObservables.AddObservable(Operators, 'nS13', 'site', 'nS13')
@@ -226,7 +254,7 @@ L = 4
 parameters = []
 parameters.append({
     'job_ID': 'BH_',
-    'unique_ID': '0',
+    'unique_ID': str(time.time()),#'0',
     'Write_Directory': 'Temp/',
     'Output_Directory': 'Output/',
     'L': L,
@@ -237,6 +265,7 @@ parameters.append({
     'g24': g24,
     'g': Ng,
     'W': Wi,
+    'pen': 1e12,
     'Abelian_generators': ['ntotal'],
     'Abelian_quantum_numbers': [L],
     'verbose': 0,
@@ -254,7 +283,10 @@ mps.runMPS(MainFiles)
 Outputs = mps.ReadDynamicObservables(parameters)
 Outputs2 = mps.ReadStaticObservables(parameters)
 
-# print Outputs2[0]['np']
+print Outputs2[0]['np']
+# print Outputs2[0]['npp']
+# print Outputs2[0]['npm']
+print Outputs2[0]['np2']
 print Outputs2[0]['na']
 print Outputs2[0]['nS12']
 print Outputs2[0]['nS13']
@@ -263,6 +295,9 @@ print Outputs2[0]['na2']
 print Outputs2[0]['nS122']
 print Outputs2[0]['nS132']
 print Outputs2[0]['nS142']
+
+print np.sum(Outputs2[0]['np'])+np.sum(Outputs2[0]['npp'])+np.sum(Outputs2[0]['npm'])
+print np.sum(Outputs2[0]['na'])+np.sum(Outputs2[0]['nS12'])+np.sum(Outputs2[0]['nS13'])+2*np.sum(Outputs2[0]['nS14'])
 
 # print Outputs
 # print Outputs[0]['na']
@@ -295,6 +330,8 @@ t = []
 # n = []
 # n2 = []
 # F = []
+np0 = []
+np02 = []
 na = []
 nS12 = []
 nS13 = []
@@ -312,6 +349,8 @@ for p in Outputs[0]:
     # na.append(p['na'][1])
     # nS12.append(p['nS12'][1])
     # F.append(np.array(p['n2']) - np.array(p['n']) ** 2)
+    np0.append(p['np'])
+    np02.append(p['np2'])
     na.append(p['na'])
     nS12.append(p['nS12'])
     nS13.append(p['nS13'])
@@ -332,12 +371,14 @@ for p in Outputs[0]:
 # print nS13
 # print nS14
 
-resi = 3
+resi = 16
 f = open('res.{0}.txt'.format(resi), 'w')
 f.write('t[{0}]={1};\n'.format(resi, mathformat(t)))
 # f.write('n[{0}]={1};\n'.format(resi, mathformat(n)))
 # f.write('n2[{0}]={1};\n'.format(resi, mathformat(n2)))
 # f.write('F[{0}]={1};\n'.format(resi, mathformat(F)))
+f.write('np[{0}]={1};\n'.format(resi, mathformat(np0)))
+f.write('np2[{0}]={1};\n'.format(resi, mathformat(np02)))
 f.write('na[{0}]={1};\n'.format(resi, mathformat(na)))
 f.write('nS12[{0}]={1};\n'.format(resi, mathformat(nS12)))
 f.write('nS13[{0}]={1};\n'.format(resi, mathformat(nS13)))
@@ -347,6 +388,14 @@ f.write('nS122[{0}]={1};\n'.format(resi, mathformat(nS122)))
 f.write('nS132[{0}]={1};\n'.format(resi, mathformat(nS132)))
 f.write('nS142[{0}]={1};\n'.format(resi, mathformat(nS142)))
 
+end = time.time()
+runtime = str(datetime.timedelta(seconds=end-start))
+print runtime
+f.write('runtime[{0}]=\"{1}\";\n'.format(resi, runtime))
+f.flush()
+
+npi = np.array(np0)[:,1]
+np2i = np.array(np02)[:,1]
 nai = np.array(na)[:,1]
 nS12i = np.array(nS12)[:,1]
 nS13i = np.array(nS13)[:,1]
@@ -356,10 +405,23 @@ nS122i = np.array(nS122)[:,1]
 nS132i = np.array(nS132)[:,1]
 nS142i = np.array(nS142)[:,1]
 
+Fp = np2i - npi**2
+Fa = na2i - nai**2
+FS12 = nS12i - nS12i**2
+FS13 = nS13i - nS13i**2
+FS14 = nS14i - nS14i**2
+
 # pylab.plot(t, F)
 # pylab.plot(t, n, t, n2, t, F)
 # pylab.plot(t, na, t, nS12)
+pylab.figure()
 pylab.plot(t, nai, t, nS12i, t, nS13i, t, nS14i, t, na2i, t, nS122i, t, nS132i, t, nS142i)
+pylab.figure()
+pylab.plot(t, Fa, t, FS12, t, FS13, t, FS14)
+pylab.figure()
+pylab.plot(t, npi, t, np2i)
+pylab.figure()
+pylab.plot(t, Fp)
 pylab.show()
 
 quit()
