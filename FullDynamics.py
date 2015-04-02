@@ -301,7 +301,7 @@ parameters.append({
 })
 
 MainFiles=mps.WriteFiles(parameters,Operators,H,PostProcess=PostProcessOnly)
-mps.runMPS(MainFiles,RunDir='')
+mps.runMPS(MainFiles,RunDir='./')
 
 Outputs = mps.ReadDynamicObservables(parameters)
 Outputs2 = mps.ReadStaticObservables(parameters)
@@ -439,7 +439,7 @@ f.write('Sdana[{0}]={1};\n'.format(resi, mathformat(Sdana)))
 f.write('nanS[{0}]={1};\n'.format(resi, mathformat(nanS)))
 f.write('SdanS[{0}]={1};\n'.format(resi, mathformat(SdanS)))
 f.write('SdaadS[{0}]={1};\n'.format(resi, mathformat(SdaadS)))
-f.write('qwe[{0}]={1};\n'.format(resi, mathformat(qwe)))
+# f.write('qwe[{0}]={1};\n'.format(resi, mathformat(qwe)))
 
 
 end = time.time()
