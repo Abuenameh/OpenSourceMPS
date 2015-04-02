@@ -75,14 +75,14 @@ def JWi(W):
 def UWi(W):
     return -g24 ** 2 / Delta * (Ng ** 2 * W ** 2) / ((Ng ** 2 + W ** 2) ** 2)
 
-PostProcessOnly = int(sys.argv[1])
+PostProcessOnly = 0#int(sys.argv[1])
 
 # if not PostProcessOnly:
 #     import gtk
 #     import gobject
 
 # Build operators
-nmax = 3
+nmax = 4
 Operators = mps.BuildBoseOperators(nmax, nFlavors=4)
 Operators['n2'] = np.dot(Operators['nbtotal'], Operators['nbtotal'])
 Operators['interaction'] = 0.5 * (np.dot(Operators['nbtotal'], Operators['nbtotal']) - Operators['nbtotal'])
@@ -225,6 +225,19 @@ Operators['na2'] = np.dot(Operators['na'], Operators['na'])
 Operators['nS122'] = np.dot(Operators['nS12'], Operators['nS12'])
 Operators['nS132'] = np.dot(Operators['nS13'], Operators['nS13'])
 Operators['nS142'] = np.dot(Operators['nS14'], Operators['nS14'])
+Operators['adS'] = np.dot(Operators['ad'], Operators['S12'])
+Operators['Sda'] = np.dot(Operators['S12d'], Operators['a'])
+Operators['adSpSda'] = Operators['adS'] + Operators['Sda']
+Operators['adSadS'] = np.dot(Operators['adS'], Operators['adS']) + np.dot(Operators['Sda'], Operators['Sda'])
+Operators['adSna'] = np.dot(Operators['adS'], Operators['na']) + np.dot(Operators['na'], Operators['Sda'])
+Operators['adSnS'] = np.dot(Operators['adS'], Operators['nS12']) + np.dot(Operators['nS12'], Operators['Sda'])
+Operators['adSSda'] = np.dot(Operators['adS'], Operators['Sda'])
+Operators['Sdana'] = np.dot(Operators['Sda'], Operators['na']) + np.dot(Operators['na'], Operators['adS'])
+Operators['nanS'] = np.dot(Operators['na'], Operators['nS12']) + np.dot(Operators['nS12'], Operators['na'])
+Operators['SdanS'] = np.dot(Operators['Sda'], Operators['nS12']) + np.dot(Operators['nS12'], Operators['adS'])
+Operators['SdaadS'] = np.dot(Operators['Sda'], Operators['adS'])
+# Operators['qwe'] = (1/B**2)*(Ng*Ng*Operators['nS12'] + Wi**2*Operators['na'] - Ng*Wi*Operators['adSpSda'])
+# Operators['qwe'] = Operators['adSnS']#Ng*Ng*Operators['nS12']#(1/B**2)*Ng*Ng*Operators['nS12']
 myObservables.AddObservable(Operators, 'np', 'site', 'np')
 myObservables.AddObservable(Operators, 'npp', 'site', 'npp')
 myObservables.AddObservable(Operators, 'npm', 'site', 'npm')
@@ -247,6 +260,16 @@ dynObservables.AddObservable(Operators, 'na2', 'site', 'na2')
 dynObservables.AddObservable(Operators, 'nS122', 'site', 'nS122')
 dynObservables.AddObservable(Operators, 'nS132', 'site', 'nS132')
 dynObservables.AddObservable(Operators, 'nS142', 'site', 'nS142')
+dynObservables.AddObservable(Operators, 'adSpSda', 'site', 'adSpSda')
+dynObservables.AddObservable(Operators, 'adSadS', 'site', 'adSadS')
+dynObservables.AddObservable(Operators, 'adSna', 'site', 'adSna')
+dynObservables.AddObservable(Operators, 'adSnS', 'site', 'adSnS')
+dynObservables.AddObservable(Operators, 'adSSda', 'site', 'adSSda')
+dynObservables.AddObservable(Operators, 'Sdana', 'site', 'Sdana')
+dynObservables.AddObservable(Operators, 'nanS', 'site', 'nanS')
+dynObservables.AddObservable(Operators, 'SdanS', 'site', 'SdanS')
+dynObservables.AddObservable(Operators, 'SdaadS', 'site', 'SdaadS')
+# dynObservables.AddObservable(Operators, 'qwe', 'site', 'qwe')
 
 
 L = 4
@@ -278,7 +301,7 @@ parameters.append({
 })
 
 MainFiles=mps.WriteFiles(parameters,Operators,H,PostProcess=PostProcessOnly)
-mps.runMPS(MainFiles)
+mps.runMPS(MainFiles,RunDir='')
 
 Outputs = mps.ReadDynamicObservables(parameters)
 Outputs2 = mps.ReadStaticObservables(parameters)
@@ -340,6 +363,16 @@ na2 = []
 nS122 = []
 nS132 = []
 nS142 = []
+adSpSda = []
+adSadS = []
+adSna = []
+adSnS = []
+adSSda = []
+Sdana = []
+nanS = []
+SdanS = []
+SdaadS = []
+# qwe = []
 for p in Outputs[0]:
     t.append(p['time'])
     # F.append(p['n2'][1] - p['n'][1] ** 2)
@@ -359,6 +392,16 @@ for p in Outputs[0]:
     nS122.append(p['nS122'])
     nS132.append(p['nS132'])
     nS142.append(p['nS142'])
+    adSpSda.append(p['adSpSda'])
+    adSadS.append(p['adSadS'])
+    adSna.append(p['adSna'])
+    adSnS.append(p['adSnS'])
+    adSSda.append(p['adSSda'])
+    Sdana.append(p['Sdana'])
+    nanS.append(p['nanS'])
+    SdanS.append(p['SdanS'])
+    SdaadS.append(p['SdaadS'])
+    # qwe.append(p['qwe'])
 
 # print t
 # print n
@@ -371,7 +414,7 @@ for p in Outputs[0]:
 # print nS13
 # print nS14
 
-resi = 16
+resi = int(sys.argv[1])
 f = open('res.{0}.txt'.format(resi), 'w')
 f.write('t[{0}]={1};\n'.format(resi, mathformat(t)))
 # f.write('n[{0}]={1};\n'.format(resi, mathformat(n)))
@@ -387,6 +430,17 @@ f.write('na2[{0}]={1};\n'.format(resi, mathformat(na2)))
 f.write('nS122[{0}]={1};\n'.format(resi, mathformat(nS122)))
 f.write('nS132[{0}]={1};\n'.format(resi, mathformat(nS132)))
 f.write('nS142[{0}]={1};\n'.format(resi, mathformat(nS142)))
+f.write('adSpSda[{0}]={1};\n'.format(resi, mathformat(adSpSda)))
+f.write('adSadS[{0}]={1};\n'.format(resi, mathformat(adSadS)))
+f.write('adSna[{0}]={1};\n'.format(resi, mathformat(adSna)))
+f.write('adSnS[{0}]={1};\n'.format(resi, mathformat(adSnS)))
+f.write('adSSda[{0}]={1};\n'.format(resi, mathformat(adSSda)))
+f.write('Sdana[{0}]={1};\n'.format(resi, mathformat(Sdana)))
+f.write('nanS[{0}]={1};\n'.format(resi, mathformat(nanS)))
+f.write('SdanS[{0}]={1};\n'.format(resi, mathformat(SdanS)))
+f.write('SdaadS[{0}]={1};\n'.format(resi, mathformat(SdaadS)))
+f.write('qwe[{0}]={1};\n'.format(resi, mathformat(qwe)))
+
 
 end = time.time()
 runtime = str(datetime.timedelta(seconds=end-start))
@@ -422,7 +476,7 @@ pylab.figure()
 pylab.plot(t, npi, t, np2i)
 pylab.figure()
 pylab.plot(t, Fp)
-pylab.show()
+# pylab.show()
 
 quit()
 
