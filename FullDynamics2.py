@@ -152,7 +152,7 @@ myConv = mps.MPSConvergenceParameters(max_num_sweeps=maxsweeps)
 myConv.AddModifiedConvergenceParameters(0,['max_bond_dimension','local_tol'],[50,1E-14])
 # myKrylovConv=mps.KrylovConvergenceParameters(MaxnLanczosIterations=40,lanczos_tol=1E-8)
 # myKrylovConv=mps.KrylovConvergenceParameters(MaxnLanczosIterations=40,lanczos_tol=1E-8)
-myKrylovConv=mps.KrylovConvergenceParameters(max_num_sweeps=8,max_outer_sweeps=8)
+myKrylovConv=mps.KrylovConvergenceParameters(max_bond_dimension=1000)
 
 # Wi = 7.9e10
 # Wf = 1.1e12
@@ -205,7 +205,7 @@ def pent(t):
 
 Quenches=mps.QuenchList()
 # Quenches.AddQuench(H, ['e'], 1e-8, 1e-9, [qwet], ConvergenceParameters=myKrylovConv)
-Quenches.AddQuench(H, ['W', 'g24', 'e', 'De', 'a', 'g', 'd', 'pen'], 1e-7, 1e-9, [Wt, g24t, et, Det, at, gt, dt, pent], ConvergenceParameters=myKrylovConv)
+Quenches.AddQuench(H, ['W', 'g24', 'e', 'De', 'a', 'g', 'd', 'pen'], 1e-6, 1e-9, [Wt, g24t, et, Det, at, gt, dt, pent], ConvergenceParameters=myKrylovConv)
 # Quenches.AddQuench(H, ['J', 'U'], 1e-7, 1e-9, [Ji, Ui], ConvergenceParameters=myKrylovConv)
 # Quenches.AddQuench(H, ['J'], 1, 1e-3, [Jfunc], ConvergenceParameters=myKrylovConv)
 
